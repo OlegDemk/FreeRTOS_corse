@@ -32,7 +32,7 @@ int tim_val = 0;
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+extern uint8_t user_data;
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -188,7 +188,7 @@ void USART2_IRQHandler(void)
   /* USER CODE END USART2_IRQn 0 */
   HAL_UART_IRQHandler(&huart2);
   /* USER CODE BEGIN USART2_IRQn 1 */
-
+  //HAL_UART_Receive_IT(&huart2, (uint8_t*)&user_data , 1);
   /* USER CODE END USART2_IRQn 1 */
 }
 

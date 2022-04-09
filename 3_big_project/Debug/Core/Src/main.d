@@ -50,6 +50,7 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../USB_HOST/App/usb_host.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/queue.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/task.h \
+ ../Middlewares/Third_Party/FreeRTOS/Source/include/timers.h \
  ../Core/Inc/oled/oled.h ../Core/Inc/oled/gfx.h \
  ../Core/Inc/clock/i2c_scanner.h ../Core/Inc/clock/DS3231.h
 
@@ -156,6 +157,8 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Middlewares/Third_Party/FreeRTOS/Source/include/queue.h:
 
 ../Middlewares/Third_Party/FreeRTOS/Source/include/task.h:
+
+../Middlewares/Third_Party/FreeRTOS/Source/include/timers.h:
 
 ../Core/Inc/oled/oled.h:
 

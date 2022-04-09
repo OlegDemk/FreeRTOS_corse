@@ -25,13 +25,17 @@
 /* USER CODE BEGIN Includes */
 
 #include "queue.h"
+#include "string.h"
+#include "timers.h"
 
-// Oled
+// OLED
 #include "oled/oled.h"
 #include "oled/gfx.h"
-
+// Clock ecternal i2c RTC and OLED
 #include "clock/i2c_scanner.h"
 #include "clock/DS3231.h"
+
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -45,13 +49,13 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-uint8_t user_data;					// Data variable for write data from UART
+volatile uint8_t user_data;						// Data variable for write data from UART
 
 // Command
 typedef struct
 {
-	uint8_t payload[10];			// Data bytes of the command
-	uint8_t len;					// command length
+	uint8_t payload[10];				// Data bytes of the command
+	uint8_t len;						// command length
 }command_t;
 
 // Application states
@@ -64,15 +68,25 @@ typedef enum
 	sRtcDateConfig,
 	sRtcReport,
 }satte_t;
-satte_t curr_state = sMainMenu;		// Set current state as sMainMenu
+satte_t curr_state = sMainMenu;			// Set current state as sMainMenu
 
 void process_command(command_t *cmd);
 int extract_command(command_t *cmd);
 
+const char *msg_inv = "/// Invalid option ///\n\r\n\r";
 
+// LEDs redefinition
+#define LED1 LD4_Pin
+#define LED2 LD3_Pin
+#define LED3 LD5_Pin
+#define LED4 LD6_Pin
 
+// Software timer handlers
+TimerHandle_t handler_led_timer[4];
 
-// Encoder
+void led_effect_callback(TimerHandle_t xTimer);
+
+// Encoder for clock ///////////////////////////
 int32_t currCounter = 0;
 int32_t prevCounter = 0;
 int klick = 0;
@@ -105,35 +119,35 @@ const osThreadAttr_t defaultTask_attributes = {
 osThreadId_t menu_taskHandle;
 const osThreadAttr_t menu_task_attributes = {
   .name = "menu_task",
-  .stack_size = 128 * 4,
+  .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for led_task */
 osThreadId_t led_taskHandle;
 const osThreadAttr_t led_task_attributes = {
   .name = "led_task",
-  .stack_size = 128 * 4,
+  .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for rtc_task */
 osThreadId_t rtc_taskHandle;
 const osThreadAttr_t rtc_task_attributes = {
   .name = "rtc_task",
-  .stack_size = 128 * 4,
+  .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for print_task */
 osThreadId_t print_taskHandle;
 const osThreadAttr_t print_task_attributes = {
   .name = "print_task",
-  .stack_size = 128 * 4,
+  .stack_size = 512 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
-/* Definitions for com_handl_task */
-osThreadId_t com_handl_taskHandle;
-const osThreadAttr_t com_handl_task_attributes = {
-  .name = "com_handl_task",
-  .stack_size = 128 * 4,
+/* Definitions for cmd_handl_task */
+osThreadId_t cmd_handl_taskHandle;
+const osThreadAttr_t cmd_handl_task_attributes = {
+  .name = "cmd_handl_task",
+  .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for OLED_RTC */
@@ -141,6 +155,13 @@ osThreadId_t OLED_RTCHandle;
 const osThreadAttr_t OLED_RTC_attributes = {
   .name = "OLED_RTC",
   .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+/* Definitions for test_task */
+osThreadId_t test_taskHandle;
+const osThreadAttr_t test_task_attributes = {
+  .name = "test_task",
+  .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for input_Queue */
@@ -173,8 +194,9 @@ void start_menu_task(void *argument);
 void start_led_task(void *argument);
 void start_rtc_task(void *argument);
 void start_print(void *argument);
-void start_com_handl(void *argument);
+void start_cmd_handl(void *argument);
 void StartOLED_RTC(void *argument);
+void Start_test_task(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -222,7 +244,8 @@ int main(void)
   MX_TIM1_Init();
   MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
-  HAL_UART_Receive_IT(&huart2, &user_data , 1);			// Turn on receive one char in interrupt mode
+
+
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -237,15 +260,17 @@ int main(void)
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
+
+//  osTimerStart(test_timerHandle, 100);
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
 
   /* Create the queue(s) */
   /* creation of input_Queue */
-  input_QueueHandle = osMessageQueueNew (16, sizeof(uint16_t), &input_Queue_attributes);
+  input_QueueHandle = osMessageQueueNew (10, sizeof(long unsigned int), &input_Queue_attributes);
 
   /* creation of print_Queue */
-  print_QueueHandle = osMessageQueueNew (16, sizeof(uint16_t), &print_Queue_attributes);
+  print_QueueHandle = osMessageQueueNew (1, sizeof(char*), &print_Queue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -267,14 +292,29 @@ int main(void)
   /* creation of print_task */
   print_taskHandle = osThreadNew(start_print, NULL, &print_task_attributes);
 
-  /* creation of com_handl_task */
-  com_handl_taskHandle = osThreadNew(start_com_handl, NULL, &com_handl_task_attributes);
+  /* creation of cmd_handl_task */
+  cmd_handl_taskHandle = osThreadNew(start_cmd_handl, NULL, &cmd_handl_task_attributes);
 
   /* creation of OLED_RTC */
   OLED_RTCHandle = osThreadNew(StartOLED_RTC, NULL, &OLED_RTC_attributes);
 
+  /* creation of test_task */
+  test_taskHandle = osThreadNew(Start_test_task, NULL, &test_task_attributes);
+
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
+
+  // Create software timers (Created manually)  FOr LEDs
+   handler_led_timer[0] = xTimerCreate("led_timer_1", pdMS_TO_TICKS(100), pdTRUE, (void*)1, led_effect_callback);
+   handler_led_timer[1] = xTimerCreate("led_timer_2", pdMS_TO_TICKS(100), pdTRUE, (void*)2, led_effect_callback);
+   handler_led_timer[2] = xTimerCreate("led_timer_3", pdMS_TO_TICKS(100), pdTRUE, (void*)3, led_effect_callback);
+   handler_led_timer[3] = xTimerCreate("led_timer_4", pdMS_TO_TICKS(100), pdTRUE, (void*)4, led_effect_callback);
+
+   // For write data from UART
+   HAL_UART_Receive_IT(&huart2, &user_data , 1);			// Turn on (start) receive one char in interrupt mode
+
+
+
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
@@ -739,41 +779,138 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 /////////////////////////////////////////////////////////////////////////////
+// Receive one char from UART. This function called by UART interrupt
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	//HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_SET);		// For test
-	uint8_t dummy = 0;
+	uint8_t dummy = 0;													// Buffer for extract '\n' sign
 	int peek_buff = 0;
 
-	xQueuePeekFromISR(input_QueueHandle, &peek_buff);
-	if(! peek_buff) 		// If the queue is full?
+	if(!xQueueIsQueueFullFromISR(input_QueueHandle))
 	{
-		// Queue is not not full
-		// Enqueue data byte
-		xQueueSendFromISR(input_QueueHandle, (void*)&user_data, NULL);
-		//xQueueSendFromISR(input_QueueHandle, );
+		xQueueSendFromISR(input_QueueHandle, (void*)&user_data, NULL);		// Enqueue data byte
 	}
-	else
+	else 																	// Queue is full
 	{
-		// Queue is full
-		if(user_data == '\n')		// Check, is user_data has '\n' sign?
+		if(user_data == '\r')												// Check, is user_data has '\n' sign?
 		{
-			// Make sure that last data byte of the queue is '\n'
-			xQueueReceiveFromISR(input_QueueHandle, (void*)&user_data, NULL );
-			xQueueSendFromISR(input_QueueHandle, (void*)&user_data, NULL);
+			xQueueReceiveFromISR(input_QueueHandle, (void*)&dummy, NULL );	// Delete '\n' sign from queue
+			xQueueSendFromISR(input_QueueHandle, (void*)&user_data, NULL);  // Save user_data on the place of '\n'
 		}
 	}
 	// Send notification to command task if user_data == '\n'
-	if(user_data == '\n')
+	if(user_data == '\r')
 	{
-		xTaskNotifyFromISR(com_handl_taskHandle, 0, eNoAction, NULL);
+		xTaskNotifyFromISR(cmd_handl_taskHandle, 0, eNoAction, NULL);		// Send notify to start_com_handl task
+		//xTaskNotify(test_taskHandle, 0, eNoAction);
+
 	}
 
-	// Enable receive data over UART
-	HAL_UART_Receive_IT(&huart2, &user_data , 1);
+	//HAL_UART_Receive_IT(&huart2, &user_data , 1);							// Enable receive data over UART again
+	HAL_UART_Receive_IT(&huart2, (uint8_t*)&user_data , 1);
 
+	//HAL_GPIO_TogglePin(GPIOD, LED4);	// LED Blink for test  BLUE LED
 }
 /////////////////////////////////////////////////////////////////////////////
+void led_effect_stop(void)
+{
+	for(int  i = 0; i < 4; i++)									// Stop all timer
+	{
+		xTimerStop(handler_led_timer[i], portMAX_DELAY);
+	}
+}
+/////////////////////////////////////////////////////////////////////////////
+void led_effect (uint8_t effect)
+{
+	led_effect_stop();											// Stop current led effect
+	xTimerStart(handler_led_timer[effect-1], portMAX_DELAY);	// Start needed led timer
+}
+/////////////////////////////////////////////////////////////////////////////
+void turn_off_all_leds(void)
+{
+	HAL_GPIO_WritePin(GPIOD, LED1, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOD, LED2, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOD, LED3, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOD, LED4, GPIO_PIN_RESET);
+}
+/////////////////////////////////////////////////////////////////////////////
+void turn_on_all_leds(void)
+{
+	HAL_GPIO_WritePin(GPIOD, LED1, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOD, LED2, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOD, LED3, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOD, LED4, GPIO_PIN_SET);
+}
+/////////////////////////////////////////////////////////////////////////////
+void turn_on_even_leds(void)
+{
+	HAL_GPIO_WritePin(GPIOD, LED1, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOD, LED2, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOD, LED3, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOD, LED4, GPIO_PIN_SET);
+}
+/////////////////////////////////////////////////////////////////////////////
+void turn_on_odd_leds(void)
+{
+	HAL_GPIO_WritePin(GPIOD, LED1, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOD, LED2, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOD, LED3, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOD, LED4, GPIO_PIN_RESET);
+}
+/////////////////////////////////////////////////////////////////////////////
+void LED_control(int value)
+{
+	for(int i = 0; i < 4; i++)
+	{
+		HAL_GPIO_WritePin(GPIOD, (LED1 << i), ((value >> i)& 0x1));
+	}
+}
+/////////////////////////////////////////////////////////////////////////////
+void LED_effect1(void)
+{
+	static int flag = 1;
+	(flag ^= 1) ? turn_off_all_leds() : turn_on_all_leds();			// Toggle LEDs
+}
+/////////////////////////////////////////////////////////////////////////////
+void LED_effect2(void)
+{
+	static int flag = 1;
+	(flag ^= 1) ? turn_on_even_leds() : turn_on_odd_leds();
+}
+/////////////////////////////////////////////////////////////////////////////
+void LED_effect3(void)
+{
+	static int i = 0;
+	LED_control (0x1 << (i++ % 4));  //  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<, ?????????????????????????????????????????????
+}
+/////////////////////////////////////////////////////////////////////////////
+void LED_effect4(void)
+{
+	static int i = 0;
+	LED_control(0x08 >> (i++ % 4));  //  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<, ?????????????????????????????????????????????
+}
+/////////////////////////////////////////////////////////////////////////////
+void led_effect_callback(TimerHandle_t xTimer)
+{
+	int id;
+	id = (uint32_t) pvTimerGetTimerID( xTimer );
+
+	switch(id)
+	{
+		case 1:
+			LED_effect1();
+			break;
+		case 2:
+			LED_effect2();
+			break;
+		case 3:
+			LED_effect3();
+			break;
+		case 4:
+			LED_effect4();
+	}
+}
+/////////////////////////////////////////////////////////////////////////////
+//
 void process_command(command_t *cmd)
 {
 	extract_command(cmd);
@@ -781,26 +918,52 @@ void process_command(command_t *cmd)
 	switch(curr_state)
 	{
 		case sMainMenu:
-			//
+			xTaskNotify(menu_taskHandle,(uint32_t*) cmd, eSetValueWithOverwrite);
 			break;
 
 		case sLedEffect:
-	 		//
+	 		xTaskNotify(led_taskHandle, (uint32_t*) cmd, eSetValueWithOverwrite);
 	 		break;
 
 	 	case sRtcMenu:
 	 	case sRtcTimeConfig:
 	 	case sRtcDateConfig:
 	 	case sRtcReport:
-	 		  break;
+	 		xTaskNotify(rtc_taskHandle, (uint32_t*) cmd, eSetValueWithOverwrite);
+	 		break;
 	 }
 }
 /////////////////////////////////////////////////////////////////////////////
+// Extract every char byte from input_QueueHandle into cmd struct
 int extract_command(command_t *cmd)
 {
-	//int
+	uint8_t item;
+	BaseType_t status;
+
+	status = uxQueueMessagesWaiting(input_QueueHandle);			// Waiting data on the queue
+	if(!status)													// If no any messages on the queue (exit from where)
+	{
+		return -1;
+	}
+
+	uint8_t i = 0;
+	do{
+		status = xQueueReceive(input_QueueHandle, &item, 0);
+		if(status == pdTRUE)
+		{
+			cmd -> payload[i++] = item;
+		}
+	}while(item != '\r');    //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+	cmd -> payload[i - 1] = '\0';		// add '\0' sign to the end
+	cmd -> len = i - 1;					// Save length in struct
+
+	return 0;
 }
 /////////////////////////////////////////////////////////////////////////////
+
+
+
 
 /* USER CODE END 4 */
 
@@ -817,17 +980,15 @@ void StartDefaultTask(void *argument)
   MX_USB_HOST_Init();
   /* USER CODE BEGIN 5 */
   /* Infinite loop */
+
   for(;;)
   {
-	  // Test LED blink
-	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);
 	  osDelay(100);
-	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_RESET);
-	  osDelay(900);
-
-	  // Test UART 2   // Work okay.
-//	  char test_uart_data[20] = "TEST\n\r";
-//	  HAL_UART_Transmit_IT(&huart2, test_uart_data, sizeof(test_uart_data));
+	  // Test LED blink
+//	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);
+//	  osDelay(100);
+//	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_RESET);
+//	  osDelay(900);
 
 
   }
@@ -845,10 +1006,71 @@ void start_menu_task(void *argument)
 {
   /* USER CODE BEGIN start_menu_task */
   /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
+
+	uint32_t cmd_addr;
+	command_t *cmd;			// Create object of command_t
+	int option;
+	const char* msg_manu = "=======================\n\r"
+						   "|         MENU          |\n\r"
+						   "========================\n\r"
+						   "LED effect       ----> 0\n\r"
+						   "Date and time    ----> 1\n\r"
+						   "Exit             ----> 2\n\r"
+						   "Enter your choice here: \n\r";
+
+	while(1)
+	{
+		int status = 0;
+		status = xQueueSend(print_QueueHandle, &msg_manu, portMAX_DELAY);		// Send data in print
+		if(status != pdPASS)
+		{
+			// ERROR
+			int ggg =999;
+		}
+
+		//xQueueSendToBack(print_QueueHandle, &msg_manu, portMAX_DELAY);
+		xTaskNotifyWait(0,0,&cmd_addr,portMAX_DELAY);					// Waiting for selected menu (waiting the choise) (from 'process_command' function)
+		cmd = (command_t*)cmd_addr;										// If number selected menu are selected, save it
+
+		if(cmd->len == 1)												// Checking, must be one number, not more
+		{
+			option = cmd -> payload[0] - 48;							// Convert from char to number, and write it on struct
+
+			switch (option)
+			{
+				case 0:													// If selected LED menu
+					curr_state = sLedEffect;
+					xTaskNotify(led_taskHandle, 0 ,eNoAction);
+					break;
+
+				case 1:
+					curr_state = sRtcMenu;								// If selected RTC menu
+					xTaskNotify(rtc_taskHandle, 0, eNoAction);
+					break;
+
+				case 2:		// Implement EXIT   (Return to main menu and print it)
+					//////////////////////////////////////////////////
+					curr_state = sMainMenu;
+					xTaskNotify(menu_taskHandle, 0 ,eNoAction);
+					/////////////////////////////////////////////////
+					break;
+
+				default:															// If input sign uncorrect
+					xQueueSend(print_QueueHandle, &msg_inv, portMAX_DELAY);			// Print message: /// Invalid option ///
+					continue;														// Return to while(1)
+			}
+		}
+		else															// Invalid entry (entered more than one char)
+		{
+			xQueueSend(print_QueueHandle, &msg_inv, portMAX_DELAY);		// Print message: /// Invalid option ///
+			continue;													// Return to while(1)
+		}
+
+		// Wait to run again when some other task notifies.
+		// After notify return to "while(1)" main loop again
+		xTaskNotifyWait(0, 0, NULL, portMAX_DELAY);
+
+	}
   /* USER CODE END start_menu_task */
 }
 
@@ -863,10 +1085,72 @@ void start_led_task(void *argument)
 {
   /* USER CODE BEGIN start_led_task */
   /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
+
+
+//	for(;;)
+//	{
+//		osDelay(100);
+//	}
+	uint32_t cmd_addr;
+	command_t *cmd;
+	const char* msg_led = "========================\n\r"
+						  "|       LED effect      |\n\r"
+						  "========================\n\r"
+						  "(none, e1, e2, e3, e4, on, off)  \n\r"
+						  "Enter your choice here : \n\r";
+
+	while(1)
+	{
+		xTaskNotifyWait(0, 0, NULL, portMAX_DELAY);					  	// Wait for notification (selected LEDs effect)
+		xQueueSend(print_QueueHandle, &msg_led, portMAX_DELAY);			// Send data to print (Print LED menu)
+
+		xTaskNotifyWait(0, 0, &cmd_addr, portMAX_DELAY);				// Wait for LED command
+		cmd = (command_t*) cmd_addr;
+
+		if(cmd -> len <= 4)											    // Check input command (max input size must be less then 4)
+		{
+			// Select LED effect
+			if( ! strcmp((char*)cmd->payload, "none" ))
+			{
+				led_effect_stop();
+			}
+			else if (! strcmp((char*)cmd -> payload, "e1"))
+			{
+				led_effect(1);
+			}
+			else if (! strcmp((char*)cmd -> payload, "e2"))
+			{
+				led_effect(2);
+			}
+			else if (! strcmp((char*)cmd -> payload, "e3"))
+			{
+				led_effect(3);
+			}
+			else if (! strcmp((char*)cmd -> payload, "e4"))
+			{
+				led_effect(4);
+			}
+			else if (! strcmp((char*)cmd -> payload, "on"))			// Work
+			{
+				turn_on_all_leds();
+			}
+			else if (! strcmp((char*)cmd -> payload, "off"))		// Work
+			{
+				turn_off_all_leds();
+			}
+			else
+			{
+				xQueueSend(print_QueueHandle, &msg_inv, portMAX_DELAY);				// Print invalid massage
+			}
+		}
+		else
+		{
+			xQueueSend(print_QueueHandle, &msg_inv, portMAX_DELAY);					// Print invalid massage
+		}
+
+		curr_state = sMainMenu;								// Return to mai menu
+		xTaskNotify(menu_taskHandle, 0, eNoAction);			// Notify menu task
+	}
   /* USER CODE END start_led_task */
 }
 
@@ -899,23 +1183,35 @@ void start_print(void *argument)
 {
   /* USER CODE BEGIN start_print */
   /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
+	uint32_t *msg;
+
+	while(1)
+	{
+		int status = 0;
+		status = xQueueReceive(print_QueueHandle, &msg, portMAX_DELAY);
+		if(status != pdPASS)
+		{
+			// ERROR
+			int ggg =999;
+		}
+	    HAL_UART_Transmit(&huart2,(uint8_t*)msg, strlen((char*)msg), HAL_MAX_DELAY);					// Doesen't work =(
+	    int ggg = 888;
+
+	//HAL_UART_Transmit(&huart2,(uint8_t*)msg, strlen((char*)msg), HAL_MAX_DELAY);  // Original <<<<<<<<<<<<<< Hard Foult
   }
   /* USER CODE END start_print */
 }
 
-/* USER CODE BEGIN Header_start_com_handl */
+/* USER CODE BEGIN Header_start_cmd_handl */
 /**
-* @brief Function implementing the com_handl_task thread.
+* @brief Function implementing the cmd_handl_task thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_start_com_handl */
-void start_com_handl(void *argument)
+/* USER CODE END Header_start_cmd_handl */
+void start_cmd_handl(void *argument)
 {
-  /* USER CODE BEGIN start_com_handl */
+  /* USER CODE BEGIN start_cmd_handl */
   /* Infinite loop */
 
 	BaseType_t ret;
@@ -929,10 +1225,8 @@ void start_com_handl(void *argument)
 		{
 			process_command(&cmd);
 		}
-
-
 	}
-  /* USER CODE END start_com_handl */
+  /* USER CODE END start_cmd_handl */
 }
 
 /* USER CODE BEGIN Header_StartOLED_RTC */
@@ -946,6 +1240,7 @@ void StartOLED_RTC(void *argument)
 {
   /* USER CODE BEGIN StartOLED_RTC */
   /* Infinite loop */
+
 	osDelay(1000);
 
 		// For resd time
@@ -1597,6 +1892,34 @@ void StartOLED_RTC(void *argument)
 			}
 		}
   /* USER CODE END StartOLED_RTC */
+}
+
+/* USER CODE BEGIN Header_Start_test_task */
+/**
+* @brief Function implementing the test_task thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_Start_test_task */
+void Start_test_task(void *argument)
+{
+  /* USER CODE BEGIN Start_test_task */
+  /* Infinite loop */
+	//BaseType_t ret;
+
+
+
+  for(;;)
+  {
+
+	  osDelay(1000);
+//	  ret = xTaskNotifyWait(0,0, NULL, portMAX_DELAY);
+//	  if(ret == pdTRUE)
+//	  {
+//		  HAL_GPIO_TogglePin(GPIOD, LED3);	// LED Blink for test
+//	  }
+  }
+  /* USER CODE END Start_test_task */
 }
 
 /**
