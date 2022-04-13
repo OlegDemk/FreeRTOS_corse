@@ -44,34 +44,34 @@ $(wildcard ../makefile.init) \
 $(wildcard ../makefile.targets) \
 
 
-BUILD_ARTIFACT_NAME := big_project
+BUILD_ARTIFACT_NAME := Queues_plus_uart_menu_big_project
 BUILD_ARTIFACT_EXTENSION := elf
 BUILD_ARTIFACT_PREFIX :=
 BUILD_ARTIFACT := $(BUILD_ARTIFACT_PREFIX)$(BUILD_ARTIFACT_NAME)$(if $(BUILD_ARTIFACT_EXTENSION),.$(BUILD_ARTIFACT_EXTENSION),)
 
 # Add inputs and outputs from these tool invocations to the build variables 
 EXECUTABLES += \
-big_project.elf \
+Queues_plus_uart_menu_big_project.elf \
 
 SIZE_OUTPUT += \
 default.size.stdout \
 
 OBJDUMP_LIST += \
-big_project.list \
+Queues_plus_uart_menu_big_project.list \
 
 OBJCOPY_BIN += \
-big_project.bin \
+Queues_plus_uart_menu_big_project.bin \
 
 
 # All Target
 all: main-build
 
 # Main-build Target
-main-build: big_project.elf secondary-outputs
+main-build: Queues_plus_uart_menu_big_project.elf secondary-outputs
 
 # Tool invocations
-big_project.elf: $(OBJS) $(USER_OBJS) /home/odemki/my_files/my_projects/STM32/FreeRTOS/courses/1.FreeRTOS_Udemy_main_course/RTOS_workspace/MY_EXAMPLES/3_big_project/STM32F407VGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "big_project.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"/home/odemki/my_files/my_projects/STM32/FreeRTOS/courses/1.FreeRTOS_Udemy_main_course/RTOS_workspace/MY_EXAMPLES/3_big_project/STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="big_project.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Queues_plus_uart_menu_big_project.elf: $(OBJS) $(USER_OBJS) /home/odemki/my_files/my_projects/STM32/FreeRTOS/courses/1.FreeRTOS_Udemy_main_course/RTOS_workspace/MY_EXAMPLES/3_big_project/STM32F407VGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "Queues_plus_uart_menu_big_project.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"/home/odemki/my_files/my_projects/STM32/FreeRTOS/courses/1.FreeRTOS_Udemy_main_course/RTOS_workspace/MY_EXAMPLES/3_big_project/STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Queues_plus_uart_menu_big_project.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -80,19 +80,19 @@ default.size.stdout: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
 	@echo 'Finished building: $@'
 	@echo ' '
 
-big_project.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "big_project.list"
+Queues_plus_uart_menu_big_project.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "Queues_plus_uart_menu_big_project.list"
 	@echo 'Finished building: $@'
 	@echo ' '
 
-big_project.bin: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-objcopy  -O binary $(EXECUTABLES) "big_project.bin"
+Queues_plus_uart_menu_big_project.bin: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objcopy  -O binary $(EXECUTABLES) "Queues_plus_uart_menu_big_project.bin"
 	@echo 'Finished building: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) big_project.bin big_project.elf big_project.list default.size.stdout
+	-$(RM) Queues_plus_uart_menu_big_project.bin Queues_plus_uart_menu_big_project.elf Queues_plus_uart_menu_big_project.list default.size.stdout
 	-@echo ' '
 
 secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST) $(OBJCOPY_BIN)
