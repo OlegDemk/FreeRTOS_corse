@@ -2,7 +2,7 @@
 FREERTOS.FootprintOK=true
 FREERTOS.IPParameters=Tasks01,configUSE_NEWLIB_REENTRANT,FootprintOK,Queues01
 FREERTOS.Queues01=input_Queue,10,char*,0,Dynamic,NULL,NULL;print_Queue,10,char*,0,Dynamic,NULL,NULL
-FREERTOS.Tasks01=defaultTask,24,128,StartDefaultTask,Default,NULL,Dynamic,NULL,NULL;menu_task,24,256,start_menu_task,Default,NULL,Dynamic,NULL,NULL;led_task,24,256,start_led_task,Default,NULL,Dynamic,NULL,NULL;rtc_task,24,800,start_rtc_task,Default,NULL,Dynamic,NULL,NULL;print_task,24,512,start_print,Default,NULL,Dynamic,NULL,NULL;cmd_handl_task,24,256,start_cmd_handl,Default,NULL,Dynamic,NULL,NULL;OLED_RTC,24,256,StartOLED_RTC,Default,NULL,Dynamic,NULL,NULL
+FREERTOS.Tasks01=defaultTask,24,128,StartDefaultTask,Default,NULL,Dynamic,NULL,NULL;menu_task,24,256,start_menu_task,Default,NULL,Dynamic,NULL,NULL;led_task,24,256,start_led_task,Default,NULL,Dynamic,NULL,NULL;rtc_task,24,800,start_rtc_task,Default,NULL,Dynamic,NULL,NULL;print_task,24,512,start_print,Default,NULL,Dynamic,NULL,NULL;cmd_handl_task,24,256,start_cmd_handl,Default,NULL,Dynamic,NULL,NULL;OLED_RTC,24,256,StartOLED_RTC,Default,NULL,Dynamic,NULL,NULL;test_task,24,256,start_test_task,Default,NULL,Dynamic,NULL,NULL
 FREERTOS.configUSE_NEWLIB_REENTRANT=1
 File.Version=6
 GPIO.groupedBy=Group By Peripherals

@@ -67,6 +67,10 @@ typedef enum
 	sRtcTimeConfig,
 	sRtcDateConfig,
 	sRtcReport,
+	sTestMenu,			// Test menu
+	sTestPodMenu_1,
+	sTestPodMenu_2,
+	sTestPodMenu_3,
 }satte_t;
 satte_t curr_state = sMainMenu;			// Set current state as sMainMenu
 
@@ -157,6 +161,13 @@ const osThreadAttr_t OLED_RTC_attributes = {
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
+/* Definitions for test_task */
+osThreadId_t test_taskHandle;
+const osThreadAttr_t test_task_attributes = {
+  .name = "test_task",
+  .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
 /* Definitions for input_Queue */
 osMessageQueueId_t input_QueueHandle;
 const osMessageQueueAttr_t input_Queue_attributes = {
@@ -189,6 +200,7 @@ void start_rtc_task(void *argument);
 void start_print(void *argument);
 void start_cmd_handl(void *argument);
 void StartOLED_RTC(void *argument);
+void start_test_task(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -289,6 +301,9 @@ int main(void)
 
   /* creation of OLED_RTC */
   OLED_RTCHandle = osThreadNew(StartOLED_RTC, NULL, &OLED_RTC_attributes);
+
+  /* creation of test_task */
+  test_taskHandle = osThreadNew(start_test_task, NULL, &test_task_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -922,6 +937,12 @@ void process_command(command_t *cmd)
 	 	case sRtcReport:
 	 		xTaskNotify(rtc_taskHandle, (uint32_t*) cmd, eSetValueWithOverwrite);
 	 		break;
+
+	 	case sTestMenu:
+	 	case sTestPodMenu_1:
+	 	case sTestPodMenu_2:
+	 	case sTestPodMenu_3:
+			xTaskNotify(test_taskHandle, (uint32_t*) cmd, eSetValueWithOverwrite);
 	 }
 }
 /////////////////////////////////////////////////////////////////////////////
@@ -993,7 +1014,7 @@ void rtc_configure_time(RTC_TimeTypeDef *time)
 	HAL_RTC_SetTime(&hrtc, time, RTC_FORMAT_BIN);
 }
 /////////////////////////////////////////////////////////////////////////////
-void rtc_configure_date(RTC_TimeTypeDef *date)
+void rtc_configure_date(RTC_DateTypeDef *date)
 {
 	HAL_RTC_SetDate(&hrtc, date, RTC_FORMAT_BIN);
 }
@@ -1047,6 +1068,7 @@ int validate_rtc_information(RTC_TimeTypeDef *time, RTC_DateTypeDef *date)
 	{
 		return -1;
 	}
+	return 1;
 }
 /////////////////////////////////////////////////////////////////////////////
 
@@ -1100,7 +1122,8 @@ void start_menu_task(void *argument)
 						   "========================\n\r"
 						   "LED effect       ----> 0\n\r"
 						   "Date and time    ----> 1\n\r"
-						   "Exit             ----> 2\n\r"
+						   "Test menu        ----> 2\n\r"
+						   "Exit             ----> 3\n\r"
 						   "Enter your choice here: \n\r";
 
 	while(1)
@@ -1133,11 +1156,14 @@ void start_menu_task(void *argument)
 					xTaskNotify(rtc_taskHandle, 0, eNoAction);
 					break;
 
-				case 2:		// Implement EXIT   (Return to main menu and print it)
-					//////////////////////////////////////////////////
+				case 2:
+					curr_state = sTestMenu;
+					xTaskNotify(test_taskHandle, 0 ,eNoAction);
+					break;
+
+				case 3:		// EXIT   (Return to main menu and print it)
 					curr_state = sMainMenu;
 					xTaskNotify(menu_taskHandle, 0 ,eNoAction);
-					/////////////////////////////////////////////////
 					break;
 
 				default:															// If input sign uncorrect
@@ -2192,6 +2218,83 @@ void StartOLED_RTC(void *argument)
 			}
 		}
   /* USER CODE END StartOLED_RTC */
+}
+
+/* USER CODE BEGIN Header_start_test_task */
+/**
+* @brief Function implementing the test_task thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_start_test_task */
+void start_test_task(void *argument)
+{
+  /* USER CODE BEGIN start_test_task */
+  /* Infinite loop */
+
+		const char* test_print = "===== TEST MENU ===\n\r"
+								 "BLUE LED ON ----> 1\n\r"
+								 "BLUE LED OFF----> 2\n\r"
+								 "menu 3      ----> 3\n\r"
+								 "EXIT     ----> exit\n\r"
+								 "Enter your choice here : \n\r";
+
+		const char* led_on_msg = "BLUE LED ON\n\r";
+		const char* led_off_msg = "BLUE LED OFF\n\r";
+		const char* nothing_msg = "Nothing\n\r";
+
+	uint32_t cmd_addr;
+	command_t *cmd;
+
+  for(;;)
+  {
+    //osDelay(1);
+
+	  xTaskNotifyWait(0,0,&cmd_addr,portMAX_DELAY);
+//	  xQueueSend(print_QueueHandle, &test_print, portMAX_DELAY);
+
+	  while(curr_state != sMainMenu)
+	  {
+		  xQueueSend(print_QueueHandle, &test_print, portMAX_DELAY);
+		  xTaskNotifyWait(0, 0, &cmd_addr, portMAX_DELAY);				// Wait  command
+		  cmd = (command_t*) cmd_addr;
+
+		  if(cmd -> len <= 4)											    // Check input command (max input size must be less then 4)
+		  {
+			// Select LED effect
+			  if( ! strcmp((char*)cmd->payload, "1" ))
+			  {
+				  HAL_GPIO_WritePin(GPIOD, LED4, GPIO_PIN_SET);
+				  xQueueSend(print_QueueHandle, &led_on_msg, portMAX_DELAY);
+
+			  }
+			  else if(! strcmp((char*)cmd->payload, "2" ))
+			  {
+				  HAL_GPIO_WritePin(GPIOD, LED4, GPIO_PIN_RESET);
+				  xQueueSend(print_QueueHandle, &led_off_msg, portMAX_DELAY);
+			  }
+			  else if(! strcmp((char*)cmd->payload, "3" ))
+			  {
+				  xQueueSend(print_QueueHandle, &nothing_msg, portMAX_DELAY);
+			  }
+			  else if(! strcmp((char*)cmd->payload, "exit" ))
+			  {
+				  curr_state = sMainMenu;									// Go back to the main manu
+				  xTaskNotify(menu_taskHandle, 0, eNoAction);				// Notify menu task
+			  }
+			  else
+			  {
+				  xQueueSend(print_QueueHandle, &msg_inv, portMAX_DELAY);
+			  }
+
+		  }
+		  else
+		  {
+			  xQueueSend(print_QueueHandle, &msg_inv, portMAX_DELAY);
+		  }
+	  }
+  }
+  /* USER CODE END start_test_task */
 }
 
 /**
