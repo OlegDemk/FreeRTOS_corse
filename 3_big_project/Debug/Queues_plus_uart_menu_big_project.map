@@ -10718,90 +10718,90 @@ LOAD /home/odemki/st/stm32cubeide_1.8.0_2/plugins/com.st.stm32cube.ide.mcu.exter
  .debug_line    0x000000000002ccaf      0xf69 ./USB_HOST/Target/usbh_conf.o
  .debug_line    0x000000000002dc18      0x7d4 ./USB_HOST/Target/usbh_platform.o
 
-.debug_str      0x0000000000000000    0xe7e5f
+.debug_str      0x0000000000000000    0xe7e5d
  .debug_str     0x0000000000000000    0xcf121 ./Core/Src/clock/DS3231.o
                                       0xcf489 (size before relaxing)
- .debug_str     0x00000000000cf121     0xbb3b ./Core/Src/main.o
-                                      0xdad01 (size before relaxing)
- .debug_str     0x00000000000dac5c      0x1d6 ./Core/Src/stm32f4xx_hal_msp.o
+ .debug_str     0x00000000000cf121     0xbb39 ./Core/Src/main.o
+                                      0xdacff (size before relaxing)
+ .debug_str     0x00000000000dac5a      0x1d6 ./Core/Src/stm32f4xx_hal_msp.o
                                       0xcfae7 (size before relaxing)
- .debug_str     0x00000000000dae32       0xaa ./Core/Src/stm32f4xx_hal_timebase_tim.o
+ .debug_str     0x00000000000dae30       0xaa ./Core/Src/stm32f4xx_hal_timebase_tim.o
                                       0xce9b8 (size before relaxing)
- .debug_str     0x00000000000daedc      0x47e ./Core/Src/stm32f4xx_it.o
+ .debug_str     0x00000000000daeda      0x47e ./Core/Src/stm32f4xx_it.o
                                       0xcf08a (size before relaxing)
- .debug_str     0x00000000000db35a      0x369 ./Core/Src/sysmem.o
+ .debug_str     0x00000000000db358      0x369 ./Core/Src/sysmem.o
                                        0x62ea (size before relaxing)
- .debug_str     0x00000000000db6c3       0xaf ./Core/Src/system_stm32f4xx.o
+ .debug_str     0x00000000000db6c1       0xaf ./Core/Src/system_stm32f4xx.o
                                       0xcdf2b (size before relaxing)
- .debug_str     0x00000000000db772      0x1c2 ./Core/Src/oled/fonts.o
+ .debug_str     0x00000000000db770      0x1c2 ./Core/Src/oled/fonts.o
                                        0x2fe7 (size before relaxing)
- .debug_str     0x00000000000db934      0x126 ./Core/Src/oled/gfx.o
+ .debug_str     0x00000000000db932      0x126 ./Core/Src/oled/gfx.o
                                        0x7aa7 (size before relaxing)
- .debug_str     0x00000000000dba5a       0xcb ./Core/Src/oled/oled.o
+ .debug_str     0x00000000000dba58       0xcb ./Core/Src/oled/oled.o
                                       0xcee38 (size before relaxing)
- .debug_str     0x00000000000dbb25       0x36 ./Core/Startup/startup_stm32f407vgtx.o
+ .debug_str     0x00000000000dbb23       0x36 ./Core/Startup/startup_stm32f407vgtx.o
                                          0xbb (size before relaxing)
- .debug_str     0x00000000000dbb5b      0x538 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.o
+ .debug_str     0x00000000000dbb59      0x538 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.o
                                       0xcea0d (size before relaxing)
- .debug_str     0x00000000000dc093      0x389 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.o
+ .debug_str     0x00000000000dc091      0x389 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.o
                                       0xce7fc (size before relaxing)
- .debug_str     0x00000000000dc41c      0x30a ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.o
+ .debug_str     0x00000000000dc41a      0x30a ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.o
                                       0xce355 (size before relaxing)
- .debug_str     0x00000000000dc726      0x15a ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.o
+ .debug_str     0x00000000000dc724      0x15a ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.o
                                       0xce0d2 (size before relaxing)
- .debug_str     0x00000000000dc880      0x3f7 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_hcd.o
+ .debug_str     0x00000000000dc87e      0x3f7 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_hcd.o
                                       0xce5dc (size before relaxing)
- .debug_str     0x00000000000dcc77      0xa94 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.o
+ .debug_str     0x00000000000dcc75      0xa94 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.o
                                       0xceead (size before relaxing)
- .debug_str     0x00000000000dd70b      0x27c ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s.o
+ .debug_str     0x00000000000dd709      0x27c ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s.o
                                       0xce4f4 (size before relaxing)
- .debug_str     0x00000000000dd987      0x1f1 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s_ex.o
+ .debug_str     0x00000000000dd985      0x1f1 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s_ex.o
                                       0xce432 (size before relaxing)
- .debug_str     0x00000000000ddb78      0x244 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.o
+ .debug_str     0x00000000000ddb76      0x244 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.o
                                       0xce32d (size before relaxing)
- .debug_str     0x00000000000dddbc      0x113 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.o
+ .debug_str     0x00000000000dddba      0x113 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.o
                                       0xce075 (size before relaxing)
- .debug_str     0x00000000000ddecf      0x2a3 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rtc.o
+ .debug_str     0x00000000000ddecd      0x2a3 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rtc.o
                                       0xce374 (size before relaxing)
- .debug_str     0x00000000000de172      0x53a ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_spi.o
+ .debug_str     0x00000000000de170      0x53a ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_spi.o
                                       0xce7cf (size before relaxing)
- .debug_str     0x00000000000de6ac      0xd48 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.o
+ .debug_str     0x00000000000de6aa      0xd48 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.o
                                       0xcf25a (size before relaxing)
- .debug_str     0x00000000000df3f4      0x4ee ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.o
+ .debug_str     0x00000000000df3f2      0x4ee ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.o
                                       0xcea0b (size before relaxing)
- .debug_str     0x00000000000df8e2      0x5d8 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.o
+ .debug_str     0x00000000000df8e0      0x5d8 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.o
                                       0xce8b3 (size before relaxing)
- .debug_str     0x00000000000dfeba      0x643 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_usb.o
+ .debug_str     0x00000000000dfeb8      0x643 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_usb.o
                                       0xce84c (size before relaxing)
- .debug_str     0x00000000000e04fd     0x26e9 ./Middlewares/ST/STM32_USB_Host_Library/Class/CDC/Src/usbh_cdc.o
+ .debug_str     0x00000000000e04fb     0x26e9 ./Middlewares/ST/STM32_USB_Host_Library/Class/CDC/Src/usbh_cdc.o
                                       0xd9740 (size before relaxing)
- .debug_str     0x00000000000e2be6      0x2f7 ./Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_core.o
+ .debug_str     0x00000000000e2be4      0x2f7 ./Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_core.o
                                       0xd9156 (size before relaxing)
- .debug_str     0x00000000000e2edd      0x222 ./Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_ctlreq.o
+ .debug_str     0x00000000000e2edb      0x222 ./Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_ctlreq.o
                                       0xd8c6a (size before relaxing)
- .debug_str     0x00000000000e30ff       0xfe ./Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_ioreq.o
+ .debug_str     0x00000000000e30fd       0xfe ./Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_ioreq.o
                                       0xd8a89 (size before relaxing)
- .debug_str     0x00000000000e31fd       0x97 ./Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_pipes.o
+ .debug_str     0x00000000000e31fb       0x97 ./Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_pipes.o
                                       0xd8a0e (size before relaxing)
- .debug_str     0x00000000000e3294     0x1ac5 ./Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.o
+ .debug_str     0x00000000000e3292     0x1ac5 ./Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.o
                                       0xd8694 (size before relaxing)
- .debug_str     0x00000000000e4d59      0x12d ./Middlewares/Third_Party/FreeRTOS/Source/list.o
+ .debug_str     0x00000000000e4d57      0x12d ./Middlewares/Third_Party/FreeRTOS/Source/list.o
                                        0xabb2 (size before relaxing)
- .debug_str     0x00000000000e4e86      0x93f ./Middlewares/Third_Party/FreeRTOS/Source/queue.o
+ .debug_str     0x00000000000e4e84      0x93f ./Middlewares/Third_Party/FreeRTOS/Source/queue.o
                                        0xc52f (size before relaxing)
- .debug_str     0x00000000000e57c5     0x12bc ./Middlewares/Third_Party/FreeRTOS/Source/tasks.o
+ .debug_str     0x00000000000e57c3     0x12bc ./Middlewares/Third_Party/FreeRTOS/Source/tasks.o
                                        0xd0a8 (size before relaxing)
- .debug_str     0x00000000000e6a81      0x620 ./Middlewares/Third_Party/FreeRTOS/Source/timers.o
+ .debug_str     0x00000000000e6a7f      0x620 ./Middlewares/Third_Party/FreeRTOS/Source/timers.o
                                        0xcab5 (size before relaxing)
- .debug_str     0x00000000000e70a1      0x817 ./Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.o
+ .debug_str     0x00000000000e709f      0x817 ./Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.o
                                        0xa4a6 (size before relaxing)
- .debug_str     0x00000000000e78b8      0x33b ./Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.o
+ .debug_str     0x00000000000e78b6      0x33b ./Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.o
                                        0xb4a5 (size before relaxing)
- .debug_str     0x00000000000e7bf3       0xb3 ./USB_HOST/App/usb_host.o
+ .debug_str     0x00000000000e7bf1       0xb3 ./USB_HOST/App/usb_host.o
                                       0xd90e7 (size before relaxing)
- .debug_str     0x00000000000e7ca6      0x186 ./USB_HOST/Target/usbh_conf.o
+ .debug_str     0x00000000000e7ca4      0x186 ./USB_HOST/Target/usbh_conf.o
                                       0xd9748 (size before relaxing)
- .debug_str     0x00000000000e7e2c       0x33 ./USB_HOST/Target/usbh_platform.o
+ .debug_str     0x00000000000e7e2a       0x33 ./USB_HOST/Target/usbh_platform.o
                                       0xcde54 (size before relaxing)
 
 .comment        0x0000000000000000       0x53

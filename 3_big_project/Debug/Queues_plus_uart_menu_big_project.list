@@ -41,11 +41,11 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, READONLY, DEBUGGING, OCTETS
  18 .debug_line   0002e3ec  00000000  00000000  0009a9e4  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .debug_str    000e7e5f  00000000  00000000  000c8dd0  2**0
+ 19 .debug_str    000e7e5d  00000000  00000000  000c8dd0  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 20 .comment      00000053  00000000  00000000  001b0c2f  2**0
+ 20 .comment      00000053  00000000  00000000  001b0c2d  2**0
                   CONTENTS, READONLY
- 21 .debug_frame  0000a1f4  00000000  00000000  001b0c84  2**2
+ 21 .debug_frame  0000a1f4  00000000  00000000  001b0c80  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -3292,7 +3292,7 @@ void process_command(command_t *cmd)
 	 		break;
  80017b6:	e007      	b.n	80017c8 <process_command+0x84>
 
-	 	case sTestMenu_1:
+	 	case sTestMenu:
 	 	case sTestPodMenu_1:
 	 	case sTestPodMenu_2:
 	 	case sTestPodMenu_3:
@@ -3851,7 +3851,7 @@ void start_menu_task(void *argument)
  8001afe:	e027      	b.n	8001b50 <start_menu_task+0xec>
 
 				case 2:
-					curr_state = sTestMenu_1;
+					curr_state = sTestMenu;
  8001b00:	4b19      	ldr	r3, [pc, #100]	; (8001b68 <start_menu_task+0x104>)
  8001b02:	2206      	movs	r2, #6
  8001b04:	701a      	strb	r2, [r3, #0]
@@ -7287,6 +7287,7 @@ void start_test_task(void *argument)
  80032fa:	f00b fa75 	bl	800e7e8 <xQueueGenericSend>
  80032fe:	e007      	b.n	8003310 <start_test_task+0x124>
 			  }
+
 		  }
 		  else
 		  {

@@ -67,7 +67,7 @@ typedef enum
 	sRtcTimeConfig,
 	sRtcDateConfig,
 	sRtcReport,
-	sTestMenu_1,			// Test menu
+	sTestMenu,			// Test menu
 	sTestPodMenu_1,
 	sTestPodMenu_2,
 	sTestPodMenu_3,
@@ -942,7 +942,8 @@ void process_command(command_t *cmd)
 	 		xTaskNotify(rtc_taskHandle, (uint32_t*) cmd, eSetValueWithOverwrite);
 	 		break;
 
-	 	case sTestMenu_1:
+
+	 	case sTestMenu:
 	 	case sTestPodMenu_1:
 	 	case sTestPodMenu_2:
 	 	case sTestPodMenu_3:
@@ -1161,7 +1162,7 @@ void start_menu_task(void *argument)
 					break;
 
 				case 2:
-					curr_state = sTestMenu_1;
+					curr_state = sTestMenu;
 					xTaskNotify(test_taskHandle, 0 ,eNoAction);
 					break;
 
@@ -2290,6 +2291,7 @@ void start_test_task(void *argument)
 			  {
 				  xQueueSend(print_QueueHandle, &msg_inv, portMAX_DELAY);
 			  }
+
 		  }
 		  else
 		  {
