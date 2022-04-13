@@ -49,7 +49,7 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-volatile uint8_t user_data;						// Data variable for write data from UART
+volatile uint8_t user_data;						// For write data from UART
 
 // Command
 typedef struct
@@ -133,7 +133,7 @@ const osThreadAttr_t led_task_attributes = {
 osThreadId_t rtc_taskHandle;
 const osThreadAttr_t rtc_task_attributes = {
   .name = "rtc_task",
-  .stack_size = 256 * 4,
+  .stack_size = 800 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for print_task */
@@ -155,13 +155,6 @@ osThreadId_t OLED_RTCHandle;
 const osThreadAttr_t OLED_RTC_attributes = {
   .name = "OLED_RTC",
   .stack_size = 256 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
-};
-/* Definitions for test_task */
-osThreadId_t test_taskHandle;
-const osThreadAttr_t test_task_attributes = {
-  .name = "test_task",
-  .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for input_Queue */
@@ -196,7 +189,6 @@ void start_rtc_task(void *argument);
 void start_print(void *argument);
 void start_cmd_handl(void *argument);
 void StartOLED_RTC(void *argument);
-void Start_test_task(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -267,10 +259,10 @@ int main(void)
 
   /* Create the queue(s) */
   /* creation of input_Queue */
-  input_QueueHandle = osMessageQueueNew (10, sizeof(long unsigned int), &input_Queue_attributes);
+  input_QueueHandle = osMessageQueueNew (10, sizeof(char*), &input_Queue_attributes);
 
   /* creation of print_Queue */
-  print_QueueHandle = osMessageQueueNew (1, sizeof(char*), &print_Queue_attributes);
+  print_QueueHandle = osMessageQueueNew (10, sizeof(char*), &print_Queue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -297,9 +289,6 @@ int main(void)
 
   /* creation of OLED_RTC */
   OLED_RTCHandle = osThreadNew(StartOLED_RTC, NULL, &OLED_RTC_attributes);
-
-  /* creation of test_task */
-  test_taskHandle = osThreadNew(Start_test_task, NULL, &test_task_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -658,7 +647,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
+  huart2.Init.BaudRate = 9600;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
@@ -811,6 +800,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	//HAL_GPIO_TogglePin(GPIOD, LED4);	// LED Blink for test  BLUE LED
 }
 /////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
+//			LEDs
 void led_effect_stop(void)
 {
 	for(int  i = 0; i < 4; i++)									// Stop all timer
@@ -910,7 +901,7 @@ void led_effect_callback(TimerHandle_t xTimer)
 	}
 }
 /////////////////////////////////////////////////////////////////////////////
-//
+// Function depends on selected menu chose(notify) needed task
 void process_command(command_t *cmd)
 {
 	extract_command(cmd);
@@ -961,9 +952,103 @@ int extract_command(command_t *cmd)
 	return 0;
 }
 /////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
+//			RTC
+void show_time_date(void)
+{
+	static char showtime[40];
+	static char showdate[40];
 
+	RTC_DateTypeDef rtc_date;
+	RTC_TimeTypeDef rtc_time;
 
+	static char *time = showtime;
+	static char *date = showdate;
 
+	memset(&rtc_time,0, sizeof(rtc_time));
+	memset(&rtc_date, 0, sizeof(rtc_date));
+
+	// Get time
+	HAL_RTC_GetTime(&hrtc, &rtc_time, RTC_FORMAT_BIN);
+	// Get date
+	HAL_RTC_GetTime(&hrtc, &rtc_date, RTC_FORMAT_BIN);
+
+	char *format;
+	format = (rtc_time.TimeFormat == RTC_HOURFORMAT12_AM) ? "AM" : "PM";
+
+	// Display time and data
+	sprintf((char*)showtime, "%s: \t%02d:%02d:%02d [%s]", "\n Current Time&date", rtc_time.Hours, rtc_time.Minutes, rtc_time.Seconds, format);
+	xQueueSend(print_QueueHandle, &time, portMAX_DELAY);		// Send to UART
+
+	sprintf((char*)showdate, "\t%02d-%02d-%02d\n\r", rtc_date.Month, rtc_date.Date, 2000 + rtc_date.Year);
+	xQueueSend(print_QueueHandle, &date, portMAX_DELAY);
+}
+/////////////////////////////////////////////////////////////////////////////
+void rtc_configure_time(RTC_TimeTypeDef *time)
+{
+	time -> TimeFormat = RTC_HOURFORMAT12_AM;
+//	time -> DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
+//	time -> StoreOperation = RTC_STOREOPERATION_RESET;
+
+	HAL_RTC_SetTime(&hrtc, time, RTC_FORMAT_BIN);
+}
+/////////////////////////////////////////////////////////////////////////////
+void rtc_configure_date(RTC_TimeTypeDef *date)
+{
+	HAL_RTC_SetDate(&hrtc, date, RTC_FORMAT_BIN);
+}
+/////////////////////////////////////////////////////////////////////////////
+// Convert two char into two digits
+uint8_t getnumber(uint8_t *p, int len)
+{
+	int value;
+	if(len > 1)
+	{
+		value = (((p[0] - 48)*10) + (p[1] - 48));		// Convert two chars into digits
+	}
+	else
+	{
+		value = p[0] - 48;
+	}
+
+	return value;
+}
+/////////////////////////////////////////////////////////////////////////////
+int validate_rtc_information(RTC_TimeTypeDef *time, RTC_DateTypeDef *date)
+{
+	// Validate hours, minutes and seconds
+	if(((time -> Hours ) > 12) || ((time -> Hours < 0)))
+	{
+		return -1;
+	}
+	else if(((time -> Minutes > 59) || ((time -> Minutes  < 0))))
+	{
+		return -1;
+	}
+	else if(((time -> Seconds > 59) || ((time -> Seconds  < 0))))
+	{
+		return -1;
+	}
+
+	// Validate date, week day, year, month
+	else if((date -> Date < 1 ) || (date -> Date > 31))
+	{
+		return -1;
+	}
+	else if((date -> WeekDay < 1 ) || (date -> WeekDay > 7))
+	{
+		return -1;
+	}
+	else if(date -> Year > 99 )
+	{
+		return -1;
+	}
+	else if((date -> Month < 1 ) || (date -> Month > 12))
+	{
+		return -1;
+	}
+}
+/////////////////////////////////////////////////////////////////////////////
 
 /* USER CODE END 4 */
 
@@ -1165,10 +1250,225 @@ void start_rtc_task(void *argument)
 {
   /* USER CODE BEGIN start_rtc_task */
   /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
+
+	const char* msg_rtc1 = "========================\n\r"
+						   "|          RTC         |\n\r"
+						   "========================\n\r"
+						   "Configure Time   ----> 0\n\r"
+						   "Configure Date   ----> 1\n\r"
+						   "Enable reporting ----> 2\n\r"
+			               "Exit             ----> 3\n\r"
+			  	  	  	   "Enter your choice here : \n\r";
+
+	const char *msg_rtc_hh = "Enter hour(1-12):";
+	const char *msg_rtc_mm = "Enter minutes(0-59):";
+	const char *msg_rtc_ss = "Enter seconds(0-59):";
+
+	const char *msg_rtc_dd  = "Enter date(1-31):";
+	const char *msg_rtc_mo  ="Enter month(1-12):";
+	const char *msg_rtc_dow  = "Enter day(1-7 sun:1):";
+	const char *msg_rtc_yr  = "Enter year(0-99):";
+
+	const char *msg_conf = "Configuration successful\n";
+	const char *msg_rtc_report = "Enable time&date reporting(y/n)?: ";
+
+	uint32_t cmd_addr;
+	command_t *cmd;
+
+	RTC_TimeTypeDef time;
+	RTC_DateTypeDef date;
+
+	//date.Date = 9;
+
+	uint8_t menu_code; 					// For RTC menu
+	static int rtc_state = 0;
+
+	#define HH_CONFIG	0
+	#define MM_CONFIG	1
+	#define SS_CONFIG	2
+
+	#define DATE_CONFIG 	0
+	#define MONTH_CONFIG	1
+	#define YEAR_CONFIG		2
+	#define DAY_CONFIG		3
+
+	while(1)
+	{
+		xTaskNotifyWait(0, 0, NULL, portMAX_DELAY);								// Notify wait (wait till someone notifies)
+		xQueueSend(print_QueueHandle, &msg_rtc1, portMAX_DELAY);			    // Print the menu
+		show_time_date();														// Print the current date and time information
+		//osDelay(100);
+
+
+		//xTaskNotifyWait(0, 0, NULL, portMAX_DELAY);
+		//xTaskNotifyWait(0, 0, &cmd_addr, portMAX_DELAY);		 			// Wait for command notification (Notify wait)
+		while(curr_state != sMainMenu)
+		{
+			///////////////////////////////////////////////
+//			xTaskNotifyWait(0, 0, NULL, portMAX_DELAY);					  	// Wait for notification (selected LEDs effect)
+//			//xQueueSend(print_QueueHandle, &msg_led, portMAX_DELAY);			// Send data to print (Print LED menu)
+//
+//			xTaskNotifyWait(0, 0, &cmd_addr, portMAX_DELAY);				// Wait for LED command
+//			cmd = (command_t*) cmd_addr;
+//
+//			if(cmd -> len <= 4)											    // Check input command (max input size must be less then 4)
+//					{
+
+			/////////////////////////////////////////////
+			int ret_status = xTaskNotifyWait(0, 0, &cmd_addr, portMAX_DELAY);		 			// Waiting for command notification (Notify wait)
+			// Return 0x410908 and  cmd_addr = 0x410908
+			cmd = (command_t*)cmd_addr;
+
+
+			//int test_var = cmd -> len;		 	// For test   HARD FOULT <<<<<<<<<<<<<<<<<<<<<<<<<
+
+			switch(curr_state)
+			{
+				case sRtcMenu:{
+					if((cmd -> len) == 1)			// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+					{
+						menu_code = cmd -> payload[0] - 48;
+						switch(menu_code)
+						{
+						case 0:
+							curr_state = sRtcTimeConfig;
+							xQueueSend(print_QueueHandle, &msg_rtc_hh, portMAX_DELAY);
+							break;
+
+						case 1:
+							curr_state = sRtcDateConfig;
+							xQueueSend(print_QueueHandle, &msg_rtc_dd, portMAX_DELAY);
+							break;
+
+						case 2:
+							curr_state = sRtcReport;
+							xQueueSend(print_QueueHandle, &msg_rtc_report, portMAX_DELAY);
+							break;
+
+						case 3:
+							curr_state = sMainMenu;
+							break;
+						default:
+							curr_state = sMainMenu;
+							xQueueSend(print_QueueHandle, &msg_inv, portMAX_DELAY);
+						}
+					}
+					else
+					{
+						curr_state = sMainMenu;			// Go back to the main manu
+						xQueueSend(print_QueueHandle, &msg_inv, portMAX_DELAY);		// Send invalid message
+					}
+					break;}
+
+				case sRtcTimeConfig:{
+					//  get hh, mm, ss infor and configure RTC
+					//rtc_configure_time();
+					// take care of invalid entries
+					switch (rtc_state)
+					{
+						case HH_CONFIG:{
+							uint8_t hour = getnumber(cmd -> payload, cmd -> len);
+							time.Hours = hour;
+							rtc_state = MM_CONFIG;
+							xQueueSend(print_QueueHandle, &msg_rtc_mm, portMAX_DELAY);
+							break;}				// back to: while(curr_state != sMainMenu)
+
+						case MM_CONFIG:{
+							uint8_t minute = getnumber(cmd -> payload, cmd -> len);
+							time.Minutes = minute;
+							rtc_state = SS_CONFIG;
+							xQueueSend(print_QueueHandle, &msg_rtc_ss, portMAX_DELAY);
+							break;}
+						case SS_CONFIG:{
+							uint8_t second = getnumber(cmd -> payload, cmd -> len);
+							time.Seconds = second;
+
+							if(!validate_rtc_information(&time, NULL))
+							{
+								// If input data is correct
+								rtc_configure_time(&time);
+								xQueueSend(print_QueueHandle, &msg_conf, portMAX_DELAY);
+								show_time_date();
+							}
+							else
+							{
+								// If Input data isn't correct
+								xQueueSend(print_QueueHandle, &msg_inv, portMAX_DELAY);		// Send invalid message
+							}
+							curr_state = sMainMenu;			// Back to main menu
+							rtc_state = 0;					// Set first: case HH_CONFIG:{
+							break;}
+					}
+
+					curr_state = sMainMenu;			// Go back to the main manu
+					break;}
+
+				case sRtcDateConfig:{
+					switch (rtc_state)
+					{
+						case DATE_CONFIG:{
+							uint8_t d = getnumber(cmd -> payload, cmd -> len);
+							date.Date = d;
+							rtc_state = DAY_CONFIG;
+							xQueueSend(print_QueueHandle, &msg_rtc_mo, portMAX_DELAY);
+							break;}
+
+						case DAY_CONFIG:{
+							uint8_t d = getnumber(cmd -> payload, cmd -> len);
+							date.Year = d;
+							rtc_state = MONTH_CONFIG;
+							xQueueSend(print_QueueHandle, &msg_rtc_yr, portMAX_DELAY);
+							break;}
+
+						case MONTH_CONFIG:{
+							uint8_t m = getnumber(cmd -> payload, cmd -> len);
+							date.Month = m;
+							rtc_state = YEAR_CONFIG;
+							xQueueSend(print_QueueHandle, &msg_rtc_yr, portMAX_DELAY);
+							break;}
+
+						case YEAR_CONFIG:{
+							uint8_t y = getnumber(cmd -> payload, cmd -> len);
+							date.Year = y;
+
+							if(!validate_rtc_information(NULL, &date))
+							{
+								rtc_configure_date(&date);
+								xQueueSend(print_QueueHandle, &msg_conf, portMAX_DELAY);
+								show_time_date();
+							}
+							else
+							{
+								xQueueSend(print_QueueHandle, &msg_inv, portMAX_DELAY);
+							}
+
+
+							break;}
+
+
+
+
+					}
+					/*TODO : get date, month, day , year info and configure RTC */
+					//rtc_configure_date();
+					/*TODO: take care of invalid entries */
+
+
+
+					curr_state = sMainMenu;			// Go back to the main manu
+					break;}
+
+				case sRtcReport:{
+					/*TODO: enable or disable RTC current time reporting over ITM printf */
+					break;}
+
+				}// switch end
+//			}
+
+
+		} //while end
+		xTaskNotify(menu_taskHandle, 0, eNoAction);		// Notify menu task
+	}
   /* USER CODE END start_rtc_task */
 }
 
@@ -1892,34 +2192,6 @@ void StartOLED_RTC(void *argument)
 			}
 		}
   /* USER CODE END StartOLED_RTC */
-}
-
-/* USER CODE BEGIN Header_Start_test_task */
-/**
-* @brief Function implementing the test_task thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_Start_test_task */
-void Start_test_task(void *argument)
-{
-  /* USER CODE BEGIN Start_test_task */
-  /* Infinite loop */
-	//BaseType_t ret;
-
-
-
-  for(;;)
-  {
-
-	  osDelay(1000);
-//	  ret = xTaskNotifyWait(0,0, NULL, portMAX_DELAY);
-//	  if(ret == pdTRUE)
-//	  {
-//		  HAL_GPIO_TogglePin(GPIOD, LED3);	// LED Blink for test
-//	  }
-  }
-  /* USER CODE END Start_test_task */
 }
 
 /**
