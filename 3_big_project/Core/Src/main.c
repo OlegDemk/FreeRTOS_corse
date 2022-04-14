@@ -315,8 +315,12 @@ int main(void)
    handler_led_timer[3] = xTimerCreate("led_timer_4", pdMS_TO_TICKS(100), pdTRUE, (void*)4, led_effect_callback);
 
    // For write data from UART
-   HAL_UART_Receive_IT(&huart2, &user_data , 1);			// Turn on (start) receive one char in interrupt mode
 
+   int uart2_init_status = HAL_UART_Receive_IT(&huart2, &user_data , 1);			// Turn on (start) receive one char in interrupt mode
+   if(uart2_init_status == HAL_ERROR)
+   {
+	   int ggg =9;
+   }
 
 
   /* USER CODE END RTOS_THREADS */
